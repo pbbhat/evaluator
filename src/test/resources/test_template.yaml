@@ -1,0 +1,7 @@
+pattern: ^http[s]?://www.mountainhardwear.com/[^/]+-[0-9]+\.html
+domain: mountainhardwear.com
+name: mountainhardwear.com
+rules:
+  - name: title
+    xPath: //h1[contains(@class, 'product-name')]/text()
+    output_format: TEXT

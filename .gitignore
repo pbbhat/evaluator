@@ -1,3 +1,10 @@
+# Intellij
+.idea
+
+# Gradle
+.gradle
+build
+
 # Compiled class file
 *.class
 
