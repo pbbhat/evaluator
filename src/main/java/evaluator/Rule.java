@@ -31,7 +31,7 @@ public class Rule {
   @JsonProperty("output_format")
   String outputFormat;
 
-  public void validate() {
+  public void validateAndInitialize() {
     Preconditions.checkArgument(
         !Strings.isNullOrEmpty(name),
         "Name must be non-empty!");

@@ -49,7 +49,12 @@ public class App implements Callable<Void>  {
               .userAgent("Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)")
               .get();
           List<String> results = applyTemplate(line, template, document);
-          System.out.println(String.join("\t", results));
+          if (results != null) {
+            System.out.println(String.join("\t", results));
+          } else {
+            System.err.println(
+                "URL " + line + "did not match template url regex: " + template.pattern);
+          }
         } catch (MalformedURLException e) {
           System.err.println("URL: " + line + " is not a valid URL: " + e.getMessage());
         } catch (IOException e) {
@@ -61,15 +66,18 @@ public class App implements Callable<Void>  {
   }
 
   List<String> applyTemplate(String url, Template template, Document document) {
-    List<String> results = new ArrayList<>();
-    results.add(url);
-    for (Rule rule : template.rules) {
-      XElements elements = rule.evaluator.evaluate(document);
-      List<String> values = elements.list();
-      if (values.size() > 0) {
-        results.add(String.join(", ", values));
-      } else {
-        results.add("");
+    List<String> results = null;
+    if (template.urlMatch.test(url)) {
+      results = new ArrayList<>();
+      results.add(url);
+      for (Rule rule : template.rules) {
+        XElements elements = rule.evaluator.evaluate(document);
+        List<String> values = elements.list();
+        if (values.size() > 0) {
+          results.add(String.join(", ", values));
+        } else {
+          results.add("");
+        }
       }
     }
     return results;
@@ -78,7 +86,7 @@ public class App implements Callable<Void>  {
   Template loadTemplate(File templateFile) throws IOException {
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     Template template = mapper.readValue(templateFile, Template.class);
-    template.validate();
+    template.validateAndInitialize();
     return template;
   }
 }
