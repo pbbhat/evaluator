@@ -44,23 +44,24 @@ public class App implements Callable<Void>  {
     System.out.println(String.join("\t", rulesNames));
     try (Stream<String> lines = Files.lines(urlFile.toPath())) {
       lines.forEachOrdered(line -> {
-        try {
-          Document document = Jsoup.connect(line)
-              .userAgent("Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)")
-              .get();
-          List<String> results = applyTemplate(line, template, document);
-          if (results != null) {
-            System.out.println(String.join("\t", results));
-          } else {
-            System.err.println(
-                "URL " + line + "did not match template url regex: " + template.pattern);
+        if(!line.trim().isEmpty()) {
+          try {
+            Document document = Jsoup.connect(line)
+                .userAgent("Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)")
+                .get();
+            List<String> results = applyTemplate(line, template, document);
+            if (results != null) {
+              System.out.println(String.join("\t", results));
+            } else {
+              System.err.println(
+                  "URL " + line + "did not match template url regex: " + template.pattern);
+            }
+          } catch (MalformedURLException e) {
+            System.err.println("URL: " + line + " is not a valid URL: " + e.getMessage());
+          } catch (IOException e) {
+            System.err.println("Failed to fetch HTML from " + line + " : " + e.getMessage());
           }
-        } catch (MalformedURLException e) {
-          System.err.println("URL: " + line + " is not a valid URL: " + e.getMessage());
-        } catch (IOException e) {
-          System.err.println("Failed to fetch HTML from " + line + " : " + e.getMessage());
-        }
-      });
+      }});
     }
     return null;
   }
