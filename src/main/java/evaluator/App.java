@@ -48,6 +48,7 @@ public class App implements Callable<Void>  {
           try {
             Document document = Jsoup.connect(line)
                 .userAgent("Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)")
+                .validateTLSCertificates(false)
                 .get();
             List<String> results = applyTemplate(line, template, document);
             if (results != null) {
