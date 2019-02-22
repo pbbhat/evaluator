@@ -85,6 +85,7 @@ public class App implements Callable<Void>  {
       try{
         document = Jsoup.connect(url)
     	    	   .userAgent("Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)")
+    	    	   .validateTLSCertificates(false)
     			   .get();
         if (htmlCache.enabled()) {
           htmlCache.insertDocument(url, document);
