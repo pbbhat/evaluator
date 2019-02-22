@@ -20,6 +20,7 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+
 @Command(
     description = "Fetches HTML for the supplied URLs and applies the provided template",
     name = "template_eval",
@@ -31,13 +32,21 @@ public class App implements Callable<Void>  {
 
   @Parameters(index = "1", description = "Template file")
   private File templateFile;
+  
+  @Parameters(index = "2", description = "Folder for HTML cache")
+  private String htmlCacheFolderName;
+  
+  private HTMLCache htmlCache = null;
 
   public static void main(String[] args) {
     CommandLine.call(new App(), args);
   }
-
+ 
   @Override
   public Void call() throws Exception {
+	//Initialize the on-disk HTML cache  
+    htmlCache = new HTMLCache(htmlCacheFolderName);
+    
     Template template = loadTemplate(templateFile);
     List<String> rulesNames = template.rules.stream().map(rule -> rule.name).collect(Collectors.toList());
     rulesNames.add(0, "url");
@@ -45,27 +54,52 @@ public class App implements Callable<Void>  {
     try (Stream<String> lines = Files.lines(urlFile.toPath())) {
       lines.forEachOrdered(line -> {
         if(!line.trim().isEmpty()) {
-          try {
-            Document document = Jsoup.connect(line)
-                .userAgent("Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)")
-                .validateTLSCertificates(false)
-                .get();
+          
+          Document document = fetchDocument(line);
+        	
+          if (document != null) {
             List<String> results = applyTemplate(line, template, document);
             if (results != null) {
               System.out.println(String.join("\t", results));
             } else {
               System.err.println(
-                  "URL " + line + "did not match template url regex: " + template.pattern);
+                "URL " + line + " did not match template url regex: " + template.pattern);
             }
-          } catch (MalformedURLException e) {
-            System.err.println("URL: " + line + " is not a valid URL: " + e.getMessage());
-          } catch (IOException e) {
-            System.err.println("Failed to fetch HTML from " + line + " : " + e.getMessage());
           }
       }});
     }
     return null;
   }
+  
+  //Fetch the URL's HTML contents, either from HTML cache-on-disk, or from the internet.
+  //Also, store a copy of the HTML contents on the cache, if it's enabled.	
+  //Returns the document (or null, in case of error).	
+  Document fetchDocument(String url) { 
+	Document document = null;
+
+    if (htmlCache.enabled()) {
+      document = htmlCache.fetchDocument(url);
+    }
+    
+    if (document == null) {    	
+      try{
+        document = Jsoup.connect(url)
+    	    	   .userAgent("Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)")
+    	    	   .validateTLSCertificates(false)
+    			   .get();
+        if (htmlCache.enabled()) {
+          htmlCache.insertDocument(url, document);
+        }
+        
+      } catch (MalformedURLException e) {
+        System.err.println("URL: " + url + " is not a valid URL: " + e.getMessage());
+      } catch (IOException e) {
+        System.err.println("Failed to fetch HTML from " + url + " : " + e.getMessage());
+      }
+    }
+    
+    return document;
+  }  
 
   List<String> applyTemplate(String url, Template template, Document document) {
     List<String> results = null;
