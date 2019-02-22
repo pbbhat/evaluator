@@ -46,77 +46,103 @@ public class App implements Callable<Void>  {
   }
  
   @Override
-  public Void call() throws Exception {    
-	try {
-	  URLCacheFolderName = URLCacheFolderName.trim();
-	  if (URLCacheFolderName.charAt(URLCacheFolderName.length()-1) != '/') {
-		  URLCacheFolderName = URLCacheFolderName.concat("/");
-	  }
-	  URLCache = new File(URLCacheFolderName);
-	  URLCache.mkdirs();
-	  URLCache.setWritable(true);
-	} catch (SecurityException e) {
-	  URLCacheEnabled = false;	
-      System.err.println("WARNING: Failed to create Writable URL Cache Folder " + URLCacheFolderName + ": " + e.getMessage() + ". Proceeding without Cache");  
-	}
-	    
+  public Void call() throws Exception {
+    initCache();
+    
     Template template = loadTemplate(templateFile);
     List<String> rulesNames = template.rules.stream().map(rule -> rule.name).collect(Collectors.toList());
     rulesNames.add(0, "url");
     System.out.println(String.join("\t", rulesNames));
     try (Stream<String> lines = Files.lines(urlFile.toPath())) {
       lines.forEachOrdered(line -> {
-        if(!line.trim().isEmpty()) {        	
-          try {
-        	Document document;
+        if(!line.trim().isEmpty()) {
+          
+        	Document document = fetchDocument(line);
         	
-        	if (URLCacheEnabled) {
-              Base32 base32 = new Base32();  
-        	  String encodedURL = new String(base32.encode(line.getBytes()));
-        	  encodedURL = URLCacheFolderName.concat(encodedURL);
-        	  
-        	  try {
-        	    File cacheFile = new File(encodedURL);        
-        		document = Jsoup.parse(cacheFile, "UTF-8", line);
-        		//System.out.println(line + " successfully found in the cache");
-              } catch (IOException e) {  
-        		//System.out.println(line + " not found in the cache");	
-        		document = Jsoup.connect(line)
-        				   .userAgent("Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)")
-        				   .get();
-
-        		try {               
-        		  FileWriter writer = new FileWriter(encodedURL);
-        		  writer.write(document.html());
-        		  writer.flush();
-        		  writer.close();
-        		} catch (IOException ioErr) {
-        		  System.err.println("WARNING: Failed to create cached copy for " + line+ " : " + ioErr.getMessage());  
-        		}
-        	  }
-        	} else {
-        	  document = Jsoup.connect(line)
-        			  	.userAgent("Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)")
-        			  	.get();
-            
+        	if (document != null) {
+              List<String> results = applyTemplate(line, template, document);
+              if (results != null) {
+                System.out.println(String.join("\t", results));
+              } else {
+                System.err.println(
+                  "URL " + line + " did not match template url regex: " + template.pattern);
+              }
         	}
-            List<String> results = applyTemplate(line, template, document);
-            if (results != null) {
-              System.out.println(String.join("\t", results));
-            } else {
-              System.err.println(
-                "URL " + line + " did not match template url regex: " + template.pattern);
-            }
-        	
-          } catch (MalformedURLException e) {
-            System.err.println("URL: " + line + " is not a valid URL: " + e.getMessage());
-          } catch (IOException e) {
-            System.err.println("Failed to fetch HTML from " + line + " : " + e.getMessage());
-          }
       }});
     }
     return null;
   }
+	
+	
+  //Initialize the HTML cache on disk. In case this fails, proceed without a cache.	
+  void initCache() {
+	try {
+	  URLCacheFolderName = URLCacheFolderName.trim();
+	  if (URLCacheFolderName.charAt(URLCacheFolderName.length()-1) != '/') {
+	    URLCacheFolderName = URLCacheFolderName.concat("/");
+	  }
+	  URLCache = new File(URLCacheFolderName);
+	  URLCache.mkdirs();
+	  URLCache.setWritable(true);
+    } catch (SecurityException e) {
+	  URLCacheEnabled = false;	
+      System.err.println("WARNING: Failed to create Writable URL Cache Folder " + URLCacheFolderName + ": " + e.getMessage() + ". Proceeding without Cache");  
+	}
+
+  }
+  
+  
+  //Fetch the URL's HTML contents, either from HTML cache-on-disk, or from the internet.
+  //Also, store a copy of the HTML contents on the cache, if it's enabled.	
+  //Returns the document or null, in case of error.	
+  Document fetchDocument(String url) {
+	boolean gotURL = false;  
+	Document document = null;
+	String encodedURL = null;
+  
+    if (URLCacheEnabled) {
+      Base32 base32 = new Base32();  
+      encodedURL = new String(base32.encode(url.getBytes()));
+      encodedURL = URLCacheFolderName.concat(encodedURL);
+    	  
+      try {
+    	File cacheFile = new File(encodedURL);        
+    	document = Jsoup.parse(cacheFile, "UTF-8", url);
+    	//System.out.println(url + " successfully found in the cache");
+    	gotURL = true;
+      } catch (IOException e) {  
+    	//System.out.println(url + " not found in the cache");	
+    	gotURL = false;
+      }      
+    }
+    
+    if (!gotURL) {
+    	
+      try{
+        document = Jsoup.connect(url)
+    	    	   .userAgent("Mozilla/5.0 (compatible; Pinterestbot/1.0; +http://www.pinterest.com/bot.html)")
+    			   .get();
+        gotURL = true;
+      } catch (MalformedURLException e) {
+        System.err.println("URL: " + url + " is not a valid URL: " + e.getMessage());
+      } catch (IOException e) {
+        System.err.println("Failed to fetch HTML from " + url + " : " + e.getMessage());
+      }
+    
+      if (gotURL && URLCacheEnabled) {
+    	try {               
+    	  FileWriter writer = new FileWriter(encodedURL);
+    	  writer.write(document.html());
+    	  writer.flush();
+    	  writer.close();
+    	} catch (IOException ioErr) {
+    	  System.err.println("WARNING: Failed to create cached copy for " + url + " : " + ioErr.getMessage());  
+    	}
+      }
+    }
+    
+    return document;
+  }  
 
   List<String> applyTemplate(String url, Template template, Document document) {
     List<String> results = null;

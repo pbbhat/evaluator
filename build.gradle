@@ -28,11 +28,11 @@ dependencies {
     compile 'com.fasterxml.jackson.core:jackson-databind:2.9.8'
     compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.8'
     compile group: 'us.codecraft', name: 'xsoup', version: '0.3.1'
+    compile 'commons-codec:commons-codec:1.12'
     // This dependency is found on compile classpath of this component and consumers.
     implementation 'com.google.guava:guava:27.0.1-jre'
 
-    compile files('src/main/java/dependencies/commons-codec-1.7.jar')
-
+    //compile files('src/main/java/dependencies/commons-codec-1.7.jar')
     // Use JUnit test framework
     testImplementation 'junit:junit:4.12'
 }
