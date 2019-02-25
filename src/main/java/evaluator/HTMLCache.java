@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import org.apache.commons.codec.digest.DigestUtils;
 
-import org.apache.commons.codec.binary.Base32;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
@@ -13,12 +13,11 @@ public class HTMLCache {
 	
 	private boolean cacheEnabled = true;
 	private String cacheFolderName = null;
-	private Base32 base32;
+	private FileWriter cacheTable = null;
 	
 	//Initialize the HTML cache on disk. In case this fails, proceed without a cache.	
 	public HTMLCache(String path) {
 	  try {
-		base32 = new Base32();  
 		cacheFolderName = path.trim();
 		if (cacheFolderName.charAt(cacheFolderName.length()-1) != '/') {
 		  cacheFolderName = cacheFolderName.concat("/");
@@ -26,9 +25,15 @@ public class HTMLCache {
 		File cacheFolder = new File(cacheFolderName);
 		cacheFolder.mkdirs();
 		cacheFolder.setWritable(true);
+		
+		cacheTable = new FileWriter(cacheFolderName + ".table", true);
+		
 	  } catch (SecurityException e) {
 		cacheEnabled = false;	
 		System.err.println("WARNING: Failed to create Writable Folder " + cacheFolderName + " for HTML cache: " + e.getMessage() + ". Proceeding without Cache");  
+	  } catch (IOException e) {
+		cacheEnabled = false;
+		System.err.println("WARNING: Failed to create Cache Table file " + cacheFolderName +".table :" + e.getMessage() + ". Proceeding without Cache");
 	  }
 
 	}
@@ -62,6 +67,9 @@ public class HTMLCache {
 	    writer.write(document.html());
 	    writer.flush();
 	    writer.close();
+	    
+	    cacheTable.write(encodedURL + " <--> " + url + "\n");
+	    cacheTable.flush();
 	  } catch (IOException ioErr) {
 	    System.err.println("WARNING: Failed to create cached copy for " + url + " : " + ioErr.getMessage());  
 	  }
@@ -69,10 +77,11 @@ public class HTMLCache {
 	
 	
 	private String encode(String url) {
-	  String encodedURL;
 	  
-	  encodedURL = new String(base32.encode(url.getBytes()));
-	  encodedURL = cacheFolderName.concat(encodedURL);
-	  return encodedURL;
+	  String sha256hex = DigestUtils.sha256Hex(url); 
+	  sha256hex = cacheFolderName.concat(sha256hex).concat(".") +  url.length();
+
+	  //System.out.println ("The SHA-256 hash of " + url + " is : " + sha256hex);
+	  return sha256hex;
 	}
 }
