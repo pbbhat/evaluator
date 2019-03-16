@@ -3,13 +3,16 @@
  */
 package evaluator;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
+import static org.junit.Assert.assertEquals;
+
+import com.google.common.io.ByteStreams;
+import net.sf.saxon.s9api.XdmNode;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.List;
 
 public class AppTest {
   @Test
@@ -22,14 +25,14 @@ public class AppTest {
   public void applyTemplate() throws Exception {
     try(InputStream testHTMLStream = this.getClass().getResourceAsStream("/test.html")) {
       String url = "https://www.mountainhardwear.com/mens-finder-rain-jacket-1572331.html?cgid=mens-jackets-rain&dwvar_1572331_variationColor=492#start=2";
-      Document document = Jsoup.parse(
-          testHTMLStream,
-          "UTF-8",
-          url);
+      XdmNode node = App.buildNode(ByteStreams.toByteArray(testHTMLStream));
       App app = new App();
       URL testTemplateURL = this.getClass().getResource("/test_template.yaml");
       Template template = app.loadTemplate(new File(testTemplateURL.toURI()));
-      app.applyTemplate(url, template, document);
+      List<String> result = app.applyTemplate(url, template, node);
+      assertEquals(2, result.size());
+      assertEquals(url, result.get(0));
+      assertEquals("Men's Finder™ Rain Jacket", result.get(1).trim());
     }
   }
 }

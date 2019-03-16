@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
-import us.codecraft.xsoup.XPathEvaluator;
-import us.codecraft.xsoup.Xsoup;
+import net.sf.saxon.s9api.SaxonApiException;
+import net.sf.saxon.s9api.XPathCompiler;
+import net.sf.saxon.s9api.XPathSelector;
 
 import java.util.Set;
 
@@ -26,12 +27,12 @@ public class Rule {
   @JsonProperty
   String xPath;
 
-  XPathEvaluator evaluator;
+  XPathSelector evaluator;
 
   @JsonProperty("output_format")
   String outputFormat;
 
-  public void validateAndInitialize() {
+  public void validateAndInitialize(XPathCompiler xPathCompiler) {
     Preconditions.checkArgument(
         !Strings.isNullOrEmpty(name),
         "Name must be non-empty!");
@@ -47,6 +48,10 @@ public class Rule {
         "Name must be one of {" + String.join(", ", VALID_NAMES) + "}");
     Preconditions.checkArgument(VALID_FORMATS.contains(outputFormat.toUpperCase()),
         "output_format must be one of {" + String.join(", ", VALID_FORMATS) + "}");
-    evaluator = Xsoup.compile(xPath);
+    try {
+      evaluator = xPathCompiler.compile(xPath).load();
+    } catch (SaxonApiException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

@@ -3,6 +3,7 @@ package evaluator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import net.sf.saxon.s9api.XPathCompiler;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -23,7 +24,7 @@ public class Template {
   @JsonProperty
   List<Rule> rules;
 
-  public void validateAndInitialize() {
+  public void validateAndInitialize(XPathCompiler xPathCompiler) {
     Preconditions.checkArgument(
         !Strings.isNullOrEmpty(pattern),
         "Pattern must be non-empty!");
@@ -38,7 +39,7 @@ public class Template {
     urlMatch = Pattern.compile(pattern).asPredicate(); // Make sure we can compile the pattern
     Preconditions.checkArgument(pattern.contains(domain), "The pattern should contain the domain");
     for (Rule rule : rules) {
-      rule.validateAndInitialize();
+      rule.validateAndInitialize(xPathCompiler);
     }
   }
 }
