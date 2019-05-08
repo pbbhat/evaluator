@@ -51,7 +51,7 @@ public class Rule {
     try {
       evaluator = xPathCompiler.compile(xPath).load();
     } catch (SaxonApiException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to compile xPath: " + xPath, e);
     }
   }
 }

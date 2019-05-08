@@ -39,3 +39,16 @@ dependencies {
 
 // Define the main class for the application
 mainClassName = 'evaluator.App'
+
+task createExtraScripts(type: CreateStartScripts) {
+    mainClassName = "evaluator.CacheTool"
+    classpath = startScripts.classpath
+    outputDir = startScripts.outputDir
+    applicationName = 'cacheTool'
+}
+
+applicationDistribution.into("bin") {
+    duplicatesStrategy= DuplicatesStrategy.EXCLUDE
+    from(createExtraScripts)
+    fileMode = 0755
+}
