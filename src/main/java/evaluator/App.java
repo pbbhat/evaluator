@@ -169,7 +169,7 @@ public class App implements Callable<Void> {
           results.add(StreamSupport.stream(result.spliterator(), false)
               .map(XdmItem::getStringValue).collect(Collectors.joining(",")));
         } else if ("TEXT".equals(rule.outputFormat)) {
-          results.add(result.itemAt(0).getStringValue());
+          results.add(result.itemAt(0).getStringValue().replaceAll("[\\n\\t]", " "));
         }
       }
     }
