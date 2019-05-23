@@ -120,6 +120,7 @@ public class App implements Callable<Void> {
         } catch (IOException e) {
           System.err.println("Failed to fetch HTML (certificate validation off) from " + url + " : "
               + e.getMessage());
+          return null;
         }
       }
     }
