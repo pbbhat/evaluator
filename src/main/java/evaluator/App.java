@@ -9,7 +9,6 @@ import net.sf.saxon.lib.Feature;
 import net.sf.saxon.s9api.Processor;
 import net.sf.saxon.s9api.SaxonApiException;
 import net.sf.saxon.s9api.XPathCompiler;
-import net.sf.saxon.s9api.XdmItem;
 import net.sf.saxon.s9api.XdmNode;
 import net.sf.saxon.s9api.XdmValue;
 import org.jsoup.Connection;
@@ -168,13 +167,18 @@ public class App implements Callable<Void> {
           results.add("");
         } else if ("LIST_TEXT".equals(rule.outputFormat)) {
           results.add(StreamSupport.stream(result.spliterator(), false)
-              .map(XdmItem::getStringValue).collect(Collectors.joining(",")));
+              .map(item -> normalizeWhitespace(item.getStringValue()))
+              .collect(Collectors.joining(",")));
         } else if ("TEXT".equals(rule.outputFormat)) {
-          results.add(result.itemAt(0).getStringValue().replaceAll("[\\n\\t]", " "));
+          results.add(normalizeWhitespace(result.itemAt(0).getStringValue()));
         }
       }
     }
     return results;
+  }
+
+  private String normalizeWhitespace(String input) {
+    return input.trim().replaceAll("\\s+", " ");
   }
 
   Template loadTemplate(File templateFile) throws IOException {
