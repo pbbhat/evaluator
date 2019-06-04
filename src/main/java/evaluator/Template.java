@@ -30,10 +30,10 @@ public class Template {
         "Pattern must be non-empty!");
     Preconditions.checkArgument(
         !Strings.isNullOrEmpty(domain),
-        "Pattern must be non-empty!");
+        "Domain must be non-empty!");
     Preconditions.checkArgument(
         !Strings.isNullOrEmpty(name),
-        "Pattern must be non-empty!");
+        "Name must be non-empty!");
     Preconditions.checkNotNull(rules, "At least one rule must be specified");
     Preconditions.checkArgument(rules.size() > 0, "At least one rule must be specified");
     urlMatch = Pattern.compile(pattern).asPredicate(); // Make sure we can compile the pattern
