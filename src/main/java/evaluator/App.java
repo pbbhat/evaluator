@@ -35,6 +35,7 @@ import javax.xml.transform.stream.StreamSource;
     mixinStandardHelpOptions = true,
     version = "0.1")
 public class App implements Callable<Void> {
+
   private static final Processor processor = new Processor(false);
 
   @Parameters(index = "0", description = "File containing sample URLs. One URL per line")
@@ -46,7 +47,8 @@ public class App implements Callable<Void> {
   @Parameters(index = "2", description = "Folder for HTML cache")
   private String htmlCacheFolderName;
 
-  @Parameters(index = "3", description = "Page type to extract: {product, general}")
+  @Parameters(index = "3", description = "Page type to extract: {product, general}",
+      defaultValue = "product")
   private String type;
 
   private HTMLCache htmlCache = null;
