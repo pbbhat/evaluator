@@ -1,0 +1,7 @@
+pattern: ^http[s]?://therighthairstyles.com/.*
+domain: therighthairstyles.com
+name: therighthairstyles.com
+rules:
+  - name: publish_datetime
+    xPath: //span[@class="post_date"]/text()
+    output_format: TEXT

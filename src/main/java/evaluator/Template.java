@@ -24,7 +24,7 @@ public class Template {
   @JsonProperty
   List<Rule> rules;
 
-  public void validateAndInitialize(XPathCompiler xPathCompiler) {
+  public void validateAndInitialize(XPathCompiler xPathCompiler, String type) {
     Preconditions.checkArgument(
         !Strings.isNullOrEmpty(pattern),
         "Pattern must be non-empty!");
@@ -39,7 +39,7 @@ public class Template {
     urlMatch = Pattern.compile(pattern).asPredicate(); // Make sure we can compile the pattern
     Preconditions.checkArgument(pattern.contains(domain), "The pattern should contain the domain");
     for (Rule rule : rules) {
-      rule.validateAndInitialize(xPathCompiler);
+      rule.validateAndInitialize(xPathCompiler, type);
     }
   }
 }
