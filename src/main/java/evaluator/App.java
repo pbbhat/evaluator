@@ -46,6 +46,9 @@ public class App implements Callable<Void> {
   @Parameters(index = "2", description = "Folder for HTML cache")
   private String htmlCacheFolderName;
 
+  @Parameters(index = "3", description = "Page type to extract: {product, general}")
+  private String type;
+
   private HTMLCache htmlCache = null;
 
   public static void main(String[] args) {
@@ -57,7 +60,7 @@ public class App implements Callable<Void> {
     //Initialize the on-disk HTML cache
     htmlCache = new HTMLCache(htmlCacheFolderName);
 
-    Template template = loadTemplate(templateFile);
+    Template template = loadTemplate(templateFile, type);
     List<String>
         rulesNames =
         template.rules.stream().map(rule -> rule.name).collect(Collectors.toList());
@@ -181,13 +184,13 @@ public class App implements Callable<Void> {
     return input.trim().replaceAll("\\s+", " ");
   }
 
-  Template loadTemplate(File templateFile) throws IOException {
+  Template loadTemplate(File templateFile, String type) throws IOException {
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     Template template = mapper.readValue(templateFile, Template.class);
     XPathCompiler compiler = processor.newXPathCompiler();
     compiler.declareNamespace("", "http://www.w3.org/1999/xhtml");
     compiler.setLanguageVersion("2.0");
-    template.validateAndInitialize(compiler);
+    template.validateAndInitialize(compiler, type);
     return template;
   }
 }
