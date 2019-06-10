@@ -166,6 +166,7 @@ public class App implements Callable<Void> {
         } catch (SaxonApiException e) {
           System.err.println("Failed to evaluate XPath " + rule.xPath +
               " on " + url + ":" + e.getMessage());
+          results.add("");
           continue;
         }
         if (result.size() == 0) {
