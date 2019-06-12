@@ -34,7 +34,7 @@ https://www.mountainhardwear.com/mens-finder-rain-jacket-1572331.html?cgid=mens-
 https://www.mountainhardwear.com/womens-stretchdown-jacket-1756291.html?cgid=womens-jackets-insulated&dwvar_1756291_variationColor=010#start=1   Women's StretchDown™ Jacket 
 ````
 
-Test for extract general fields:
+Test for extracting general fields:
 ````
 cd build/install/evaluator
 echo 'https://therighthairstyles.com/haircut-terms/' > urls.txt
