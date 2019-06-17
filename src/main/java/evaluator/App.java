@@ -9,7 +9,6 @@ import net.sf.saxon.lib.Feature;
 import net.sf.saxon.s9api.Processor;
 import net.sf.saxon.s9api.SaxonApiException;
 import net.sf.saxon.s9api.XPathCompiler;
-import net.sf.saxon.s9api.XdmItem;
 import net.sf.saxon.s9api.XdmNode;
 import net.sf.saxon.s9api.XdmValue;
 import org.jsoup.Connection;
@@ -36,6 +35,7 @@ import javax.xml.transform.stream.StreamSource;
     mixinStandardHelpOptions = true,
     version = "0.1")
 public class App implements Callable<Void> {
+
   private static final Processor processor = new Processor(false);
 
   @Parameters(index = "0", description = "File containing sample URLs. One URL per line")
@@ -46,6 +46,10 @@ public class App implements Callable<Void> {
 
   @Parameters(index = "2", description = "Folder for HTML cache")
   private String htmlCacheFolderName;
+
+  @Parameters(index = "3", description = "Page type to extract: {product, general}",
+      defaultValue = "product")
+  private String type;
 
   private HTMLCache htmlCache = null;
 
@@ -58,7 +62,7 @@ public class App implements Callable<Void> {
     //Initialize the on-disk HTML cache
     htmlCache = new HTMLCache(htmlCacheFolderName);
 
-    Template template = loadTemplate(templateFile);
+    Template template = loadTemplate(templateFile, type);
     List<String>
         rulesNames =
         template.rules.stream().map(rule -> rule.name).collect(Collectors.toList());
@@ -120,6 +124,7 @@ public class App implements Callable<Void> {
         } catch (IOException e) {
           System.err.println("Failed to fetch HTML (certificate validation off) from " + url + " : "
               + e.getMessage());
+          return null;
         }
       }
     }
@@ -161,28 +166,34 @@ public class App implements Callable<Void> {
         } catch (SaxonApiException e) {
           System.err.println("Failed to evaluate XPath " + rule.xPath +
               " on " + url + ":" + e.getMessage());
+          results.add("");
           continue;
         }
         if (result.size() == 0) {
           results.add("");
         } else if ("LIST_TEXT".equals(rule.outputFormat)) {
           results.add(StreamSupport.stream(result.spliterator(), false)
-              .map(XdmItem::getStringValue).collect(Collectors.joining(",")));
+              .map(item -> normalizeWhitespace(item.getStringValue()))
+              .collect(Collectors.joining(",")));
         } else if ("TEXT".equals(rule.outputFormat)) {
-          results.add(result.itemAt(0).getStringValue().replaceAll("[\\n\\t]", " "));
+          results.add(normalizeWhitespace(result.itemAt(0).getStringValue()));
         }
       }
     }
     return results;
   }
 
-  Template loadTemplate(File templateFile) throws IOException {
+  private String normalizeWhitespace(String input) {
+    return input.trim().replaceAll("\\s+", " ");
+  }
+
+  Template loadTemplate(File templateFile, String type) throws IOException {
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     Template template = mapper.readValue(templateFile, Template.class);
     XPathCompiler compiler = processor.newXPathCompiler();
     compiler.declareNamespace("", "http://www.w3.org/1999/xhtml");
     compiler.setLanguageVersion("2.0");
-    template.validateAndInitialize(compiler);
+    template.validateAndInitialize(compiler, type);
     return template;
   }
 }
